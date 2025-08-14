@@ -1,7 +1,52 @@
-import suppliersData from "@/services/mockData/suppliers.json";
+// Initialize ApperClient for supplier database operations
+const { ApperClient } = window.ApperSDK;
+
+const apperClient = new ApperClient({
+  apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+  apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+});
+
+const TABLE_NAME = 'supplier_c';
 
 // Simulate network delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Mock supplier data
+const suppliersData = [
+  {
+    Id: 1,
+    name: "Tech Solutions Inc",
+    email: "contact@techsolutions.com",
+    contact: "+1-555-0101",
+    location: "New York, NY",
+    rating: 4.5,
+    status: "active",
+    products: ["Software", "Hardware"],
+    apiEndpoint: "https://api.techsolutions.com"
+  },
+  {
+    Id: 2,
+    name: "Global Supplies Co",
+    email: "info@globalsupplies.com",
+    contact: "+1-555-0102",
+    location: "Los Angeles, CA",
+    rating: 4.2,
+    status: "active",
+    products: ["Office Supplies", "Equipment"],
+    apiEndpoint: null
+  },
+  {
+    Id: 3,
+    name: "Premium Parts Ltd",
+    email: "sales@premiumparts.com",
+    contact: "+1-555-0103",
+    location: "Chicago, IL",
+    rating: 4.8,
+    status: "active",
+    products: ["Automotive Parts", "Industrial"],
+    apiEndpoint: "https://api.premiumparts.com"
+  }
+];
 
 class SupplierService {
   constructor() {
