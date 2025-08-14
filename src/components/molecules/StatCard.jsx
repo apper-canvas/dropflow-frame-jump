@@ -15,12 +15,25 @@ const StatCard = ({
     neutral: "text-gray-500"
   };
 
+// Safe rendering function to prevent object rendering errors
+  const safeRender = (content) => {
+    if (content === null || content === undefined) return '';
+    if (typeof content === 'object') {
+      // Handle objects by extracting meaningful display value
+      if (content.value !== undefined) return String(content.value);
+      if (content.label !== undefined) return String(content.label);
+      if (content.name !== undefined) return String(content.name);
+      return String(content);
+    }
+    return String(content);
+  };
+
   return (
     <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-secondary mb-2">{value}</p>
+          <p className="text-sm font-medium text-gray-600 mb-1">{safeRender(title)}</p>
+          <p className="text-2xl font-bold text-secondary mb-2">{safeRender(value)}</p>
           {change && (
             <div className="flex items-center text-sm">
               <ApperIcon 
