@@ -17,9 +17,6 @@ import Orders from "@/components/pages/Orders";
 import Dashboard from "@/components/pages/Dashboard";
 import Suppliers from "@/components/pages/Suppliers";
 import Products from "@/components/pages/Products";
-import productsData from "@/services/mockData/products.json";
-import ordersData from "@/services/mockData/orders.json";
-import suppliersData from "@/services/mockData/suppliers.json";
 
 // Create auth context
 export const AuthContext = createContext(null);

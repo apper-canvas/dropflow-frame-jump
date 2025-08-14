@@ -1,132 +1,498 @@
-import productsData from "@/services/mockData/products.json";
-
-// Simulate network delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 class ProductService {
   constructor() {
-    this.products = [...productsData];
+    // Initialize ApperClient with Project ID and Public Key
+    const { ApperClient } = window.ApperSDK;
+    this.apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+    this.tableName = 'product_c';
   }
 
   async getAll() {
-    await delay(300);
-    return [...this.products];
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "sku_c" } },
+          { field: { Name: "description_c" } },
+          { field: { Name: "selling_price_c" } },
+          { field: { Name: "supplier_price_c" } },
+          { field: { Name: "stock_c" } },
+          { field: { Name: "category_c" } },
+          { field: { Name: "images_c" } },
+          { field: { Name: "supplier_id_c" } }
+        ],
+        orderBy: [
+          {
+            fieldName: "Id",
+            sorttype: "DESC"
+          }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching products:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async getById(id) {
-    await delay(200);
-    const product = this.products.find(p => p.Id === parseInt(id));
-    if (!product) {
-      throw new Error("Product not found");
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "sku_c" } },
+          { field: { Name: "description_c" } },
+          { field: { Name: "selling_price_c" } },
+          { field: { Name: "supplier_price_c" } },
+          { field: { Name: "stock_c" } },
+          { field: { Name: "category_c" } },
+          { field: { Name: "images_c" } },
+          { field: { Name: "supplier_id_c" } }
+        ]
+      };
+
+      const response = await this.apperClient.getRecordById(this.tableName, id, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error(`Error fetching product with ID ${id}:`, error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    return { ...product };
   }
 
   async create(productData) {
-    await delay(400);
-    const newId = Math.max(...this.products.map(p => p.Id)) + 1;
-    const newProduct = {
-      Id: newId,
-      ...productData,
-      createdAt: new Date().toISOString()
-    };
-    this.products.push(newProduct);
-    return { ...newProduct };
+    try {
+      // Only include Updateable fields
+      const updateableData = {
+        Name: productData.Name || productData.name,
+        Tags: productData.Tags || productData.tags || "",
+        sku_c: productData.sku_c || productData.sku,
+        description_c: productData.description_c || productData.description || "",
+        selling_price_c: parseFloat(productData.selling_price_c || productData.sellingPrice || productData.price || 0),
+        supplier_price_c: parseFloat(productData.supplier_price_c || productData.supplierPrice || 0),
+        stock_c: parseInt(productData.stock_c || productData.stock || 0),
+        category_c: productData.category_c || productData.category || "",
+        images_c: productData.images_c || productData.images || "",
+        supplier_id_c: productData.supplier_id_c ? parseInt(productData.supplier_id_c) : null
+      };
+
+      const params = {
+        records: [updateableData]
+      };
+
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create product ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          throw new Error(failedRecords[0].message || 'Failed to create product');
+        }
+
+        const successfulRecords = response.results.filter(result => result.success);
+        return successfulRecords[0]?.data || {};
+      }
+
+      return {};
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error creating product:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async update(id, productData) {
-    await delay(350);
-    const index = this.products.findIndex(p => p.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Product not found");
+    try {
+      // Only include Updateable fields
+      const updateableData = {
+        Id: parseInt(id),
+        Name: productData.Name || productData.name,
+        Tags: productData.Tags || productData.tags || "",
+        sku_c: productData.sku_c || productData.sku,
+        description_c: productData.description_c || productData.description || "",
+        selling_price_c: parseFloat(productData.selling_price_c || productData.sellingPrice || productData.price || 0),
+        supplier_price_c: parseFloat(productData.supplier_price_c || productData.supplierPrice || 0),
+        stock_c: parseInt(productData.stock_c || productData.stock || 0),
+        category_c: productData.category_c || productData.category || "",
+        images_c: productData.images_c || productData.images || "",
+        supplier_id_c: productData.supplier_id_c ? parseInt(productData.supplier_id_c) : null
+      };
+
+      const params = {
+        records: [updateableData]
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        if (failedRecords.length > 0) {
+          console.error(`Failed to update product ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          throw new Error(failedRecords[0].message || 'Failed to update product');
+        }
+
+        const successfulRecords = response.results.filter(result => result.success);
+        return successfulRecords[0]?.data || {};
+      }
+
+      return {};
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error updating product:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    this.products[index] = { ...this.products[index], ...productData };
-    return { ...this.products[index] };
   }
 
   async delete(id) {
-    await delay(250);
-    const index = this.products.findIndex(p => p.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Product not found");
+    try {
+      const params = {
+        RecordIds: [parseInt(id)]
+      };
+
+      const response = await this.apperClient.deleteRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        if (failedRecords.length > 0) {
+          console.error(`Failed to delete product ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          throw new Error(failedRecords[0].message || 'Failed to delete product');
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error deleting product:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    this.products.splice(index, 1);
-    return { success: true };
   }
 
   async getByCategory(category) {
-    await delay(300);
-    return this.products.filter(p => p.category === category);
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "sku_c" } },
+          { field: { Name: "description_c" } },
+          { field: { Name: "selling_price_c" } },
+          { field: { Name: "supplier_price_c" } },
+          { field: { Name: "stock_c" } },
+          { field: { Name: "category_c" } },
+          { field: { Name: "images_c" } },
+          { field: { Name: "supplier_id_c" } }
+        ],
+        where: [
+          {
+            FieldName: "category_c",
+            Operator: "EqualTo",
+            Values: [category]
+          }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching products by category:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async getLowStock(threshold = 10) {
-    await delay(250);
-    return this.products.filter(p => p.stock <= threshold && p.stock > 0);
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "sku_c" } },
+          { field: { Name: "description_c" } },
+          { field: { Name: "selling_price_c" } },
+          { field: { Name: "supplier_price_c" } },
+          { field: { Name: "stock_c" } },
+          { field: { Name: "category_c" } },
+          { field: { Name: "images_c" } },
+          { field: { Name: "supplier_id_c" } }
+        ],
+        whereGroups: [
+          {
+            operator: "AND",
+            subGroups: [
+              {
+                conditions: [
+                  {
+                    fieldName: "stock_c",
+                    operator: "LessThanOrEqualTo",
+                    values: [threshold.toString()]
+                  }
+                ]
+              },
+              {
+                conditions: [
+                  {
+                    fieldName: "stock_c",
+                    operator: "GreaterThan",
+                    values: ["0"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching low stock products:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
-async getOutOfStock() {
-    await delay(250);
-    return this.products.filter(p => p.stock === 0);
+  async getOutOfStock() {
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "sku_c" } },
+          { field: { Name: "description_c" } },
+          { field: { Name: "selling_price_c" } },
+          { field: { Name: "supplier_price_c" } },
+          { field: { Name: "stock_c" } },
+          { field: { Name: "category_c" } },
+          { field: { Name: "images_c" } },
+          { field: { Name: "supplier_id_c" } }
+        ],
+        where: [
+          {
+            FieldName: "stock_c",
+            Operator: "EqualTo",
+            Values: ["0"]
+          }
+        ]
+      };
+
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching out of stock products:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async bulkUpdatePrices(productIds, updateData) {
-    await delay(500);
-    const { type, value } = updateData;
-    
-    productIds.forEach(id => {
-      const index = this.products.findIndex(p => p.Id === parseInt(id));
-      if (index !== -1) {
-        const product = this.products[index];
-        if (type === "percentage") {
-          product.sellingPrice = parseFloat((product.sellingPrice * (1 + value / 100)).toFixed(2));
-        } else {
-          product.sellingPrice = parseFloat((product.sellingPrice + value).toFixed(2));
+    try {
+      const { type, value } = updateData;
+      
+      // First fetch current products
+      const products = await this.getAll();
+      const recordsToUpdate = [];
+      
+      productIds.forEach(id => {
+        const product = products.find(p => p.Id === parseInt(id));
+        if (product) {
+          let newPrice;
+          if (type === "percentage") {
+            newPrice = parseFloat((product.selling_price_c * (1 + value / 100)).toFixed(2));
+          } else {
+            newPrice = parseFloat((product.selling_price_c + value).toFixed(2));
+          }
+          
+          recordsToUpdate.push({
+            Id: parseInt(id),
+            selling_price_c: newPrice
+          });
         }
+      });
+
+      if (recordsToUpdate.length === 0) {
+        return { success: true };
       }
-    });
-    
-    return { success: true };
+
+      const params = {
+        records: recordsToUpdate
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return { success: true };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error bulk updating prices:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async bulkApplyDiscount(productIds, discountPercent) {
-    await delay(500);
-    
-    productIds.forEach(id => {
-      const index = this.products.findIndex(p => p.Id === parseInt(id));
-      if (index !== -1) {
-        const product = this.products[index];
-        product.sellingPrice = parseFloat((product.sellingPrice * (1 - discountPercent / 100)).toFixed(2));
+    try {
+      // First fetch current products
+      const products = await this.getAll();
+      const recordsToUpdate = [];
+      
+      productIds.forEach(id => {
+        const product = products.find(p => p.Id === parseInt(id));
+        if (product) {
+          const newPrice = parseFloat((product.selling_price_c * (1 - discountPercent / 100)).toFixed(2));
+          recordsToUpdate.push({
+            Id: parseInt(id),
+            selling_price_c: newPrice
+          });
+        }
+      });
+
+      if (recordsToUpdate.length === 0) {
+        return { success: true };
       }
-    });
-    
-    return { success: true };
+
+      const params = {
+        records: recordsToUpdate
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return { success: true };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error applying bulk discount:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async bulkDiscontinue(productIds) {
-    await delay(400);
-    
-    productIds.forEach(id => {
-      const index = this.products.findIndex(p => p.Id === parseInt(id));
-      if (index !== -1) {
-        this.products[index].stock = 0;
+    try {
+      const recordsToUpdate = productIds.map(id => ({
+        Id: parseInt(id),
+        stock_c: 0
+      }));
+
+      const params = {
+        records: recordsToUpdate
+      };
+
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
       }
-    });
-    
-    return { success: true };
+
+      return { success: true };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error bulk discontinuing products:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 }
 
 // CSV Import/Export functionality
 async function importFromCSV(csvData) {
-  await delay(800);
-  
   const lines = csvData.trim().split('\n');
   if (lines.length < 2) {
     throw new Error('CSV file must contain at least a header row and one data row');
   }
 
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-  const requiredFields = ['name', 'sku', 'price', 'category'];
+  const requiredFields = ['Name', 'sku_c', 'selling_price_c', 'category_c'];
   
   // Validate headers
   for (const field of requiredFields) {
@@ -155,20 +521,21 @@ async function importFromCSV(csvData) {
       }
 
       // Convert numeric fields
-      product.price = parseFloat(product.price);
-      if (isNaN(product.price) || product.price < 0) {
+      product.selling_price_c = parseFloat(product.selling_price_c);
+      if (isNaN(product.selling_price_c) || product.selling_price_c < 0) {
         throw new Error(`Invalid price on row ${i + 1}`);
       }
 
-      if (product.stock) {
-        product.stock = parseInt(product.stock);
-        if (isNaN(product.stock) || product.stock < 0) {
-          product.stock = 0;
+      if (product.stock_c) {
+        product.stock_c = parseInt(product.stock_c);
+        if (isNaN(product.stock_c) || product.stock_c < 0) {
+          product.stock_c = 0;
         }
       }
 
       // Check if SKU already exists
-      const existing = productService.products.find(p => p.sku === product.sku);
+      const existingProducts = await productService.getAll();
+      const existing = existingProducts.find(p => p.sku_c === product.sku_c);
       if (existing) {
         skipped++;
         continue;
@@ -187,12 +554,11 @@ async function importFromCSV(csvData) {
 }
 
 async function exportToCSV() {
-  await delay(300);
-  
-  const headers = ['Id', 'name', 'sku', 'price', 'category', 'stock', 'status', 'supplier', 'description'];
+  const products = await productService.getAll();
+  const headers = ['Id', 'Name', 'sku_c', 'selling_price_c', 'category_c', 'stock_c', 'description_c'];
   const csvContent = [
     headers.join(','),
-    ...productService.products.map(product => 
+    ...products.map(product => 
       headers.map(header => {
         const value = product[header] || '';
         // Escape commas and quotes in values
