@@ -6,17 +6,18 @@ import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
 import StatCard from "@/components/molecules/StatCard";
+import ShippingCalculator from "@/components/organisms/ShippingCalculator";
 import { orderService } from "@/services/api/orderService";
 import { toast } from "react-toastify";
-
 const Orders = () => {
-  const [orders, setOrders] = useState([]);
+const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
+  const [shippingModalOpen, setShippingModalOpen] = useState(false);
+  const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null);
   const loadOrders = async () => {
     try {
       setLoading(true);
@@ -57,7 +58,7 @@ const Orders = () => {
     setFilteredOrders(filtered);
   }, [orders, searchTerm, statusFilter]);
 
-  const handleViewOrder = (order) => {
+const handleViewOrder = (order) => {
     toast.info(`Viewing order #${order.orderNumber}`);
   };
 
@@ -70,6 +71,16 @@ const Orders = () => {
     } catch (err) {
       toast.error("Failed to update order status");
     }
+  };
+
+  const handleCalculateShipping = (order) => {
+    setSelectedOrderForShipping(order);
+    setShippingModalOpen(true);
+  };
+
+  const handleCloseShippingModal = () => {
+    setShippingModalOpen(false);
+    setSelectedOrderForShipping(null);
   };
 
   const getNextStatus = (currentStatus) => {
@@ -196,12 +207,19 @@ const Orders = () => {
           icon="ShoppingCart"
         />
       ) : (
-        <OrderTable
+<OrderTable
           orders={filteredOrders}
           onViewOrder={handleViewOrder}
           onUpdateStatus={handleUpdateOrderStatus}
+          onCalculateShipping={handleCalculateShipping}
         />
-      )}
+)}
+      
+      <ShippingCalculator
+        order={selectedOrderForShipping}
+        isOpen={shippingModalOpen}
+        onClose={handleCloseShippingModal}
+      />
     </div>
   );
 };

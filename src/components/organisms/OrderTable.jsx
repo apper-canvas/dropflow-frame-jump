@@ -1,16 +1,16 @@
 import React from "react";
+import { format } from "date-fns";
+import ApperIcon from "@/components/ApperIcon";
 import StatusBadge from "@/components/molecules/StatusBadge";
 import Button from "@/components/atoms/Button";
-import ApperIcon from "@/components/ApperIcon";
-import { format } from "date-fns";
 
-const OrderTable = ({ orders, onViewOrder, onUpdateStatus }) => {
+const OrderTable = ({ orders, onViewOrder, onUpdateStatus, onCalculateShipping }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-            <tr>
+<tr>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Order
               </th>
@@ -28,6 +28,9 @@ const OrderTable = ({ orders, onViewOrder, onUpdateStatus }) => {
               </th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Shipping
               </th>
               <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -70,8 +73,18 @@ const OrderTable = ({ orders, onViewOrder, onUpdateStatus }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <StatusBadge status={order.status} />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {format(new Date(order.createdAt), "MMM dd, yyyy")}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onCalculateShipping(order)}
+                    className="text-primary hover:text-primary-dark"
+                  >
+                    <ApperIcon name="Truck" size={16} />
+                  </Button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end space-x-2">

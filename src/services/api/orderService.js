@@ -71,11 +71,45 @@ class OrderService {
     });
   }
 
-  async getRecentOrders(limit = 10) {
+async getRecentOrders(limit = 10) {
     await delay(250);
     return [...this.orders]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, limit);
+  }
+
+  async getOrderShippingDetails(id) {
+    await delay(200);
+    const order = this.orders.find(o => o.Id === parseInt(id));
+    if (!order) {
+      throw new Error("Order not found");
+    }
+    
+    // Return enhanced order data with shipping-specific fields
+    return {
+      ...order,
+      customerAddress: order.customerAddress || `${order.customer} Address, City, State 12345`,
+      totalWeight: this.calculateOrderWeight(order),
+      estimatedDimensions: this.getEstimatedPackageDimensions(order)
+    };
+  }
+
+  calculateOrderWeight(order) {
+    // Simulate weight calculation based on items
+    const baseWeight = order.items * 1.2; // 1.2 lbs per item average
+    return Math.round(baseWeight * 10) / 10; // Round to 1 decimal
+  }
+
+  getEstimatedPackageDimensions(order) {
+    // Simulate package dimensions based on order size
+    const items = order.items;
+    if (items <= 2) {
+      return { length: 8, width: 6, height: 4 };
+    } else if (items <= 5) {
+      return { length: 12, width: 8, height: 6 };
+    } else {
+      return { length: 16, width: 12, height: 8 };
+    }
   }
 }
 
