@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import ImportExportModal from "@/components/molecules/ImportExportModal";
+import { supplierService } from "@/services/api/supplierService";
+import { toast } from "react-toastify";
 import SupplierList from "@/components/organisms/SupplierList";
+import StatCard from "@/components/molecules/StatCard";
 import SearchBar from "@/components/molecules/SearchBar";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
-import StatCard from "@/components/molecules/StatCard";
-import { supplierService } from "@/services/api/supplierService";
-import { toast } from "react-toastify";
-
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [filteredSuppliers, setFilteredSuppliers] = useState([]);
@@ -16,7 +16,7 @@ const Suppliers = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
-
+const [showImportExportModal, setShowImportExportModal] = useState(false);
   const loadSuppliers = async () => {
     try {
       setLoading(true);
@@ -71,6 +71,24 @@ const Suppliers = () => {
 
   if (loading) return <Loading />;
   if (error) return <Error message={error} onRetry={loadSuppliers} />;
+const handleImportSuppliers = async (csvData) => {
+    try {
+      const result = await supplierService.importFromCSV(csvData);
+      toast.success(`Successfully imported ${result.imported} suppliers. ${result.skipped} skipped due to errors.`);
+      loadSuppliers();
+    } catch (error) {
+      toast.error(`Import failed: ${error.message}`);
+    }
+  };
+
+  const handleExportSuppliers = async () => {
+    try {
+      await supplierService.exportToCSV();
+      toast.success('Suppliers exported successfully');
+    } catch (error) {
+      toast.error(`Export failed: ${error.message}`);
+    }
+  };
 
   // Calculate metrics
   const totalSuppliers = suppliers.length;
@@ -86,9 +104,13 @@ const Suppliers = () => {
           <h1 className="text-2xl font-bold text-secondary mb-2">Suppliers</h1>
           <p className="text-gray-600">Manage your supplier relationships and performance</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" icon="Upload">
-            Import Suppliers
+<div className="flex gap-3">
+          <Button 
+            variant="secondary" 
+            icon="Upload"
+            onClick={() => setShowImportExportModal(true)}
+          >
+            Import/Export
           </Button>
           <Button variant="primary" icon="Plus">
             Add Supplier
@@ -174,9 +196,20 @@ const Suppliers = () => {
         <SupplierList
           suppliers={filteredSuppliers}
           onViewSupplier={handleViewSupplier}
-          onEditSupplier={handleEditSupplier}
+onEditSupplier={handleEditSupplier}
         />
       )}
+
+      {/* Import/Export Modal */}
+      <ImportExportModal
+        isOpen={showImportExportModal}
+        onClose={() => setShowImportExportModal(false)}
+        onImport={handleImportSuppliers}
+        onExport={handleExportSuppliers}
+        dataType="Suppliers"
+        allowImport={true}
+        allowExport={true}
+      />
     </div>
   );
 };

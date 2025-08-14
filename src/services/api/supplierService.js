@@ -99,4 +99,118 @@ class SupplierService {
   }
 }
 
+// CSV Import/Export functionality
+async function importFromCSV(csvData) {
+  await delay(800);
+  
+  const lines = csvData.trim().split('\n');
+  if (lines.length < 2) {
+    throw new Error('CSV file must contain at least a header row and one data row');
+  }
+
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  const requiredFields = ['name', 'email', 'contact'];
+  
+  // Validate headers
+  for (const field of requiredFields) {
+    if (!headers.includes(field)) {
+      throw new Error(`Missing required field: ${field}`);
+    }
+  }
+
+  let imported = 0;
+  let skipped = 0;
+  const serviceInstance = new SupplierService();
+  
+  for (let i = 1; i < lines.length; i++) {
+    try {
+      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const supplier = {};
+      
+      headers.forEach((header, index) => {
+        supplier[header] = values[index] || '';
+      });
+
+      // Validate required fields
+      for (const field of requiredFields) {
+        if (!supplier[field]) {
+          throw new Error(`Missing ${field} on row ${i + 1}`);
+        }
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(supplier.email)) {
+        throw new Error(`Invalid email format on row ${i + 1}`);
+      }
+
+      // Convert numeric fields
+      if (supplier.rating) {
+        supplier.rating = parseFloat(supplier.rating);
+        if (isNaN(supplier.rating) || supplier.rating < 0 || supplier.rating > 5) {
+          supplier.rating = 0;
+        }
+      }
+
+      // Check if email already exists
+      const existing = serviceInstance.suppliers.find(s => s.email === supplier.email);
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      // Set default values
+      supplier.status = supplier.status || 'active';
+      supplier.location = supplier.location || '';
+      supplier.rating = supplier.rating || 0;
+
+      // Add supplier
+      await serviceInstance.create(supplier);
+      imported++;
+    } catch (error) {
+      console.warn(`Skipping row ${i + 1}: ${error.message}`);
+      skipped++;
+    }
+  }
+
+  return { imported, skipped };
+}
+
+async function exportToCSV() {
+  await delay(300);
+  
+  const serviceInstance = new SupplierService();
+  const suppliers = await serviceInstance.getAll();
+  
+  const headers = ['Id', 'name', 'email', 'contact', 'location', 'rating', 'status', 'products'];
+  const csvContent = [
+    headers.join(','),
+    ...suppliers.map(supplier => 
+      headers.map(header => {
+        let value = supplier[header] || '';
+        // Handle products array
+        if (header === 'products' && Array.isArray(value)) {
+          value = value.join('; ');
+        }
+        // Escape commas and quotes in values
+        return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+          ? `"${value.replace(/"/g, '""')}"` 
+          : value;
+      }).join(',')
+    )
+  ].join('\n');
+
+  // Create and download file
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `suppliers_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export { importFromCSV, exportToCSV };
 export const supplierService = new SupplierService();

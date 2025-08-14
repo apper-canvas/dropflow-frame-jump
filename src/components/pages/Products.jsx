@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import ImportExportModal from "@/components/molecules/ImportExportModal";
+import { productService } from "@/services/api/productService";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
 import ProductCard from "@/components/organisms/ProductCard";
+import BulkDiscountModal from "@/components/molecules/BulkDiscountModal";
+import BulkDiscontinueModal from "@/components/molecules/BulkDiscontinueModal";
+import BulkPriceUpdateModal from "@/components/molecules/BulkPriceUpdateModal";
+import BulkActionToolbar from "@/components/molecules/BulkActionToolbar";
 import SearchBar from "@/components/molecules/SearchBar";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
-import ApperIcon from "@/components/ApperIcon";
-import BulkActionToolbar from "@/components/molecules/BulkActionToolbar";
-import BulkPriceUpdateModal from "@/components/molecules/BulkPriceUpdateModal";
-import BulkDiscountModal from "@/components/molecules/BulkDiscountModal";
-import BulkDiscontinueModal from "@/components/molecules/BulkDiscontinueModal";
-import { productService } from "@/services/api/productService";
-import { toast } from "react-toastify";
-
 const Products = () => {
 const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -25,6 +25,8 @@ const [products, setProducts] = useState([]);
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showDiscontinueModal, setShowDiscontinueModal] = useState(false);
+const [showImportExportModal, setShowImportExportModal] = useState(false);
+
   const loadProducts = async () => {
     try {
       setLoading(true);
@@ -146,6 +148,24 @@ const handleViewProduct = (product) => {
       toast.error("Failed to discontinue products");
     }
   };
+const handleImportProducts = async (csvData) => {
+    try {
+      const result = await productService.importFromCSV(csvData);
+      toast.success(`Successfully imported ${result.imported} products. ${result.skipped} skipped due to errors.`);
+      loadProducts();
+    } catch (error) {
+      toast.error(`Import failed: ${error.message}`);
+    }
+  };
+
+  const handleExportProducts = async () => {
+    try {
+      await productService.exportToCSV();
+      toast.success('Products exported successfully');
+    } catch (error) {
+      toast.error(`Export failed: ${error.message}`);
+    }
+  };
 
   if (loading) return <Loading />;
   if (error) return <Error message={error} onRetry={loadProducts} />;
@@ -160,9 +180,13 @@ return (
           <h1 className="text-2xl font-bold text-secondary mb-2">Products</h1>
           <p className="text-gray-600">Browse and manage your product catalog</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" icon="Upload">
-            Import Products
+<div className="flex gap-3">
+          <Button 
+            variant="secondary" 
+            icon="Upload"
+            onClick={() => setShowImportExportModal(true)}
+          >
+            Import/Export
           </Button>
           <Button variant="primary" icon="Plus">
             Add Product
@@ -284,6 +308,17 @@ return (
         onConfirm={handleBulkDiscontinue}
         selectedCount={selectedProducts.size}
       />
+</div>
+
+     <ImportExportModal
+       isOpen={showImportExportModal}
+       onClose={() => setShowImportExportModal(false)}
+       onImport={handleImportProducts}
+       onExport={handleExportProducts}
+       dataType="Products"
+       allowImport={true}
+       allowExport={true}
+     />
     </div>
   );
 };

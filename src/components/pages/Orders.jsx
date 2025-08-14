@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import ImportExportModal from "@/components/molecules/ImportExportModal";
+import { orderService } from "@/services/api/orderService";
+import { toast } from "react-toastify";
 import OrderTable from "@/components/organisms/OrderTable";
+import ShippingCalculator from "@/components/organisms/ShippingCalculator";
+import StatCard from "@/components/molecules/StatCard";
 import SearchBar from "@/components/molecules/SearchBar";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
-import StatCard from "@/components/molecules/StatCard";
-import ShippingCalculator from "@/components/organisms/ShippingCalculator";
-import { orderService } from "@/services/api/orderService";
-import { toast } from "react-toastify";
 const Orders = () => {
 const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -18,6 +19,8 @@ const [orders, setOrders] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [shippingModalOpen, setShippingModalOpen] = useState(false);
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null);
+const [showExportModal, setShowExportModal] = useState(false);
+
   const loadOrders = async () => {
     try {
       setLoading(true);
@@ -98,6 +101,15 @@ const handleViewOrder = (order) => {
     setSearchTerm(e.target.value);
   };
 
+const handleExportOrders = async () => {
+    try {
+      await orderService.exportToCSV();
+      toast.success('Orders exported successfully');
+    } catch (error) {
+      toast.error(`Export failed: ${error.message}`);
+    }
+  };
+
   if (loading) return <Loading />;
   if (error) return <Error message={error} onRetry={loadOrders} />;
 
@@ -116,8 +128,12 @@ const handleViewOrder = (order) => {
           <h1 className="text-2xl font-bold text-secondary mb-2">Orders</h1>
           <p className="text-gray-600">Manage and track your customer orders</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" icon="Download">
+<div className="flex gap-3">
+          <Button 
+            variant="secondary" 
+            icon="Download"
+            onClick={() => setShowExportModal(true)}
+          >
             Export Orders
           </Button>
           <Button variant="primary" icon="RefreshCw" onClick={loadOrders}>
@@ -219,6 +235,15 @@ const handleViewOrder = (order) => {
         order={selectedOrderForShipping}
         isOpen={shippingModalOpen}
         onClose={handleCloseShippingModal}
+/>
+
+      <ImportExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExportOrders}
+        dataType="Orders"
+        allowImport={false}
+        allowExport={true}
       />
     </div>
   );
