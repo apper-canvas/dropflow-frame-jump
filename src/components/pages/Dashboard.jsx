@@ -8,26 +8,33 @@ import Button from "@/components/atoms/Button";
 import ApperIcon from "@/components/ApperIcon";
 import { orderService } from "@/services/api/orderService";
 import { productService } from "@/services/api/productService";
+import { supplierService } from "@/services/api/supplierService";
+import SupplierPerformanceCard from "@/components/molecules/SupplierPerformanceCard";
 import { toast } from "react-toastify";
 
 const Dashboard = () => {
-  const [orders, setOrders] = useState([]);
+const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [supplierMetrics, setSupplierMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError("");
       
-      const [ordersData, productsData] = await Promise.all([
+const [ordersData, productsData, suppliersData, metricsData] = await Promise.all([
         orderService.getAll(),
-        productService.getAll()
+        productService.getAll(),
+        supplierService.getAll(),
+        supplierService.getPerformanceMetrics()
       ]);
       
-      setOrders(ordersData);
+setOrders(ordersData);
       setProducts(productsData);
+      setSuppliers(suppliersData);
+      setSupplierMetrics(metricsData);
     } catch (err) {
       setError("Failed to load dashboard data");
       console.error("Dashboard loading error:", err);
@@ -115,6 +122,32 @@ const Dashboard = () => {
           </Button>
         </div>
       )}
+
+{/* Supplier Performance */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Supplier Performance</h2>
+          <Button variant="outline" size="sm">
+            <ApperIcon name="BarChart3" size={16} className="mr-2" />
+            View Details
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {suppliers.map(supplier => {
+            const performance = supplierMetrics.find(m => m.supplierId === supplier.Id);
+            if (!performance) return null;
+            
+            return (
+              <SupplierPerformanceCard
+                key={supplier.Id}
+                supplier={supplier}
+                performance={performance}
+              />
+            );
+          })}
+        </div>
+      </div>
 
       {/* Recent Orders */}
       <div className="space-y-4">
