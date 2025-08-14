@@ -3,7 +3,7 @@ import Button from "@/components/atoms/Button";
 import StatusBadge from "@/components/molecules/StatusBadge";
 import ApperIcon from "@/components/ApperIcon";
 
-const ProductCard = ({ product, onView, onEdit, onAddToStore }) => {
+const ProductCard = ({ product, onView, onEdit, onAddToStore, isSelected = false, onSelect }) => {
   const profit = product.sellingPrice - product.supplierPrice;
   const profitMargin = ((profit / product.sellingPrice) * 100).toFixed(1);
   
@@ -14,9 +14,34 @@ const ProductCard = ({ product, onView, onEdit, onAddToStore }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] group">
+<div className={`bg-white rounded-xl shadow-lg border overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] group ${
+      isSelected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-gray-100'
+    }`}>
       {/* Product Image */}
       <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+        {/* Selection checkbox */}
+        {onSelect && (
+          <div className="absolute top-3 left-3 z-10">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => onSelect(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                isSelected 
+                  ? 'bg-primary border-primary' 
+                  : 'bg-white border-gray-300 hover:border-primary'
+              }`}>
+                {isSelected && (
+                  <ApperIcon name="Check" size={14} className="text-white" />
+                )}
+              </div>
+            </label>
+          </div>
+        )}
+        
         {product.images && product.images.length > 0 ? (
           <img
             src={product.images[0]}

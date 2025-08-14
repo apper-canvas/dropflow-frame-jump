@@ -65,8 +65,54 @@ class ProductService {
   }
 
   async getOutOfStock() {
-    await delay(250);
+await delay(250);
     return this.products.filter(p => p.stock === 0);
+  }
+
+  async bulkUpdatePrices(productIds, updateData) {
+    await delay(500);
+    const { type, value } = updateData;
+    
+    productIds.forEach(id => {
+      const index = this.products.findIndex(p => p.Id === parseInt(id));
+      if (index !== -1) {
+        const product = this.products[index];
+        if (type === "percentage") {
+          product.sellingPrice = parseFloat((product.sellingPrice * (1 + value / 100)).toFixed(2));
+        } else {
+          product.sellingPrice = parseFloat((product.sellingPrice + value).toFixed(2));
+        }
+      }
+    });
+    
+    return { success: true };
+  }
+
+  async bulkApplyDiscount(productIds, discountPercent) {
+    await delay(500);
+    
+    productIds.forEach(id => {
+      const index = this.products.findIndex(p => p.Id === parseInt(id));
+      if (index !== -1) {
+        const product = this.products[index];
+        product.sellingPrice = parseFloat((product.sellingPrice * (1 - discountPercent / 100)).toFixed(2));
+      }
+    });
+    
+    return { success: true };
+  }
+
+  async bulkDiscontinue(productIds) {
+    await delay(400);
+    
+    productIds.forEach(id => {
+      const index = this.products.findIndex(p => p.Id === parseInt(id));
+      if (index !== -1) {
+        this.products[index].stock = 0;
+      }
+    });
+    
+    return { success: true };
   }
 }
 
