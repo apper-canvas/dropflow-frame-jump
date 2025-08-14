@@ -144,40 +144,45 @@ setOrders(ordersData);
       {/* Stats Grid */}
 {/* Enhanced KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <StatCard
+<StatCard
           title="Total Sales"
-          value={totalSales}
+          value={totalSales?.toString() || '0'}
           icon="TrendingUp"
           gradient="from-blue-500 to-blue-600"
-          change={{ value: 12, type: "positive" }}
+          changeValue={12}
+          changeType="positive"
         />
         <StatCard
           title="Total Revenue"
-          value={`$${totalRevenue.toLocaleString()}`}
+          value={`$${totalRevenue?.toLocaleString() || '0'}`}
           icon="DollarSign"
           gradient="from-success to-green-600"
-          change={{ value: 8, type: "positive" }}
+          changeValue={8}
+          changeType="positive"
         />
         <StatCard
           title="Average Order Value"
-          value={`$${averageOrderValue.toFixed(2)}`}
+          value={`$${averageOrderValue?.toFixed(2) || '0.00'}`}
           icon="Calculator"
           gradient="from-purple-500 to-purple-600"
-          change={{ value: 5, type: "positive" }}
+          changeValue={5}
+          changeType="positive"
         />
         <StatCard
           title="Pending Orders"
-          value={pendingOrders}
+          value={pendingOrders?.toString() || '0'}
           icon="Clock"
           gradient="from-warning to-yellow-600"
-          change={{ value: 3, type: "negative" }}
+          changeValue={3}
+          changeType="negative"
         />
         <StatCard
           title="Low Stock Alerts"
-          value={lowStockProducts}
+          value={lowStockProducts?.toString() || '0'}
           icon="AlertTriangle"
           gradient="from-error to-red-600"
-          change={{ value: 0, type: "neutral" }}
+          changeValue={0}
+          changeType="neutral"
         />
       </div>
 
