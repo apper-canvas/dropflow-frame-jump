@@ -5,7 +5,7 @@ import ApperIcon from "@/components/ApperIcon";
 const Sidebar = ({ isOpen, onClose }) => {
 const navigation = [
     { name: "Dashboard", href: "/", icon: "LayoutDashboard" },
-    { name: "Analytics", href: "/analytics", icon: "BarChart3" },
+{ name: "Analytics", href: "/analytics", icon: "BarChart3" },
     { name: "Products", href: "/products", icon: "Package" },
     { name: "Orders", href: "/orders", icon: "ShoppingCart" },
     { name: "Inventory", href: "/inventory", icon: "Warehouse" },

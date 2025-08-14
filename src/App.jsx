@@ -32,13 +32,14 @@ const App = () => {
           />
           
           <main className="p-4 sm:p-6 lg:p-8">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/suppliers" element={<Suppliers />} />
-            </Routes>
+<Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/analytics" element={<Dashboard />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/suppliers" element={<Suppliers />} />
+        </Routes>
           </main>
         </div>
 

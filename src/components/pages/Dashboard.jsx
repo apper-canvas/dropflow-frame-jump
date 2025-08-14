@@ -67,7 +67,23 @@ setOrders(ordersData);
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const lowStockProducts = products.filter(product => product.stock < 10 && product.stock > 0).length;
   
-  // Chart data preparation
+  // Calculate top-selling products based on order frequency
+  const productSales = {};
+  orders.filter(order => order.status === "completed").forEach(order => {
+    order.items?.forEach(item => {
+      productSales[item.productId] = (productSales[item.productId] || 0) + item.quantity;
+    });
+  });
+  
+  const topSellingProducts = products
+    .map(product => ({
+      ...product,
+      totalSold: productSales[product.Id] || 0
+    }))
+    .sort((a, b) => b.totalSold - a.totalSold)
+    .slice(0, 5);
+  
+  // Chart data preparation with realistic data
   const salesTrendData = {
     options: {
       chart: {
@@ -81,12 +97,22 @@ setOrders(ordersData);
         categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         labels: { style: { colors: '#64748B' } }
       },
-      yaxis: { labels: { style: { colors: '#64748B' } } },
+      yaxis: { 
+        labels: { 
+          style: { colors: '#64748B' },
+          formatter: (value) => '$' + value.toLocaleString()
+        } 
+      },
       grid: { borderColor: '#E2E8F0' },
-      tooltip: { theme: 'light' }
+      tooltip: { 
+        theme: 'light',
+        y: {
+          formatter: (value) => '$' + value.toLocaleString()
+        }
+      }
     },
     series: [{
-      name: 'Sales',
+      name: 'Revenue',
       data: [12000, 19000, 15000, 25000, 22000, 30000]
     }]
   };
@@ -99,6 +125,11 @@ setOrders(ordersData);
       legend: { position: 'bottom' },
       plotOptions: {
         pie: { donut: { size: '70%' } }
+      },
+      tooltip: {
+        y: {
+          formatter: (value) => value + '%'
+        }
       }
     },
     series: [35, 25, 20, 20]
@@ -112,18 +143,28 @@ setOrders(ordersData);
       },
       colors: ['#5E3AEE'],
       xaxis: {
-        categories: products.slice(0, 5).map(p => p.name.substring(0, 15) + '...'),
+        categories: topSellingProducts.map(p => p.name.substring(0, 15) + (p.name.length > 15 ? '...' : '')),
         labels: { style: { colors: '#64748B' } }
       },
-      yaxis: { labels: { style: { colors: '#64748B' } } },
+      yaxis: { 
+        labels: { 
+          style: { colors: '#64748B' },
+          formatter: (value) => value.toFixed(0)
+        } 
+      },
       grid: { borderColor: '#E2E8F0' },
       plotOptions: {
         bar: { borderRadius: 4, horizontal: false }
+      },
+      tooltip: {
+        y: {
+          formatter: (value) => value + ' units sold'
+        }
       }
     },
     series: [{
-      name: 'Sales',
-      data: products.slice(0, 5).map(() => Math.floor(Math.random() * 100) + 20)
+      name: 'Units Sold',
+      data: topSellingProducts.map(p => p.totalSold)
     }]
   };
   const recentOrders = orders.slice(0, 5);
