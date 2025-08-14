@@ -306,19 +306,18 @@ return (
         isOpen={showDiscontinueModal}
         onClose={() => setShowDiscontinueModal(false)}
         onConfirm={handleBulkDiscontinue}
-        selectedCount={selectedProducts.size}
+selectedCount={selectedProducts.size}
       />
-</div>
 
-     <ImportExportModal
-       isOpen={showImportExportModal}
-       onClose={() => setShowImportExportModal(false)}
-       onImport={handleImportProducts}
-       onExport={handleExportProducts}
-       dataType="Products"
-       allowImport={true}
-       allowExport={true}
-     />
+      <ImportExportModal
+        isOpen={showImportExportModal}
+        onClose={() => setShowImportExportModal(false)}
+        onImport={handleImportProducts}
+        onExport={handleExportProducts}
+        dataType="Products"
+        allowImport={true}
+        allowExport={true}
+      />
     </div>
   );
 };
