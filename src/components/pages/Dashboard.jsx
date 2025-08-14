@@ -11,6 +11,7 @@ import { productService } from "@/services/api/productService";
 import { supplierService } from "@/services/api/supplierService";
 import SupplierPerformanceCard from "@/components/molecules/SupplierPerformanceCard";
 import { toast } from "react-toastify";
+import Chart from "react-apexcharts";
 
 const Dashboard = () => {
 const [orders, setOrders] = useState([]);
@@ -58,12 +59,73 @@ setOrders(ordersData);
   if (loading) return <Loading />;
   if (error) return <Error message={error} onRetry={loadDashboardData} />;
 
-  // Calculate metrics
+// Calculate enhanced metrics
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === "pending").length;
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalSales = orders.filter(order => order.status === "completed").length;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const lowStockProducts = products.filter(product => product.stock < 10 && product.stock > 0).length;
+  
+  // Chart data preparation
+  const salesTrendData = {
+    options: {
+      chart: {
+        type: 'line',
+        toolbar: { show: false },
+        sparkline: { enabled: false }
+      },
+      stroke: { curve: 'smooth', width: 3 },
+      colors: ['#5E3AEE'],
+      xaxis: {
+        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        labels: { style: { colors: '#64748B' } }
+      },
+      yaxis: { labels: { style: { colors: '#64748B' } } },
+      grid: { borderColor: '#E2E8F0' },
+      tooltip: { theme: 'light' }
+    },
+    series: [{
+      name: 'Sales',
+      data: [12000, 19000, 15000, 25000, 22000, 30000]
+    }]
+  };
 
+  const categoryDistributionData = {
+    options: {
+      chart: { type: 'donut' },
+      colors: ['#5E3AEE', '#10B981', '#F59E0B', '#EF4444'],
+      labels: ['Electronics', 'Clothing', 'Books', 'Home & Garden'],
+      legend: { position: 'bottom' },
+      plotOptions: {
+        pie: { donut: { size: '70%' } }
+      }
+    },
+    series: [35, 25, 20, 20]
+  };
+
+  const topProductsData = {
+    options: {
+      chart: {
+        type: 'bar',
+        toolbar: { show: false }
+      },
+      colors: ['#5E3AEE'],
+      xaxis: {
+        categories: products.slice(0, 5).map(p => p.name.substring(0, 15) + '...'),
+        labels: { style: { colors: '#64748B' } }
+      },
+      yaxis: { labels: { style: { colors: '#64748B' } } },
+      grid: { borderColor: '#E2E8F0' },
+      plotOptions: {
+        bar: { borderRadius: 4, horizontal: false }
+      }
+    },
+    series: [{
+      name: 'Sales',
+      data: products.slice(0, 5).map(() => Math.floor(Math.random() * 100) + 20)
+    }]
+  };
   const recentOrders = orders.slice(0, 5);
 
   return (
@@ -80,48 +142,129 @@ setOrders(ordersData);
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+{/* Enhanced KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard
-          title="Total Orders"
-          value={totalOrders}
-          icon="ShoppingCart"
+          title="Total Sales"
+          value={totalSales}
+          icon="TrendingUp"
           gradient="from-blue-500 to-blue-600"
-        />
-        <StatCard
-          title="Pending Orders"
-          value={pendingOrders}
-          icon="Clock"
-          gradient="from-warning to-yellow-600"
+          change={{ value: 12, type: "positive" }}
         />
         <StatCard
           title="Total Revenue"
           value={`$${totalRevenue.toLocaleString()}`}
           icon="DollarSign"
           gradient="from-success to-green-600"
+          change={{ value: 8, type: "positive" }}
+        />
+        <StatCard
+          title="Average Order Value"
+          value={`$${averageOrderValue.toFixed(2)}`}
+          icon="Calculator"
+          gradient="from-purple-500 to-purple-600"
+          change={{ value: 5, type: "positive" }}
+        />
+        <StatCard
+          title="Pending Orders"
+          value={pendingOrders}
+          icon="Clock"
+          gradient="from-warning to-yellow-600"
+          change={{ value: 3, type: "negative" }}
         />
         <StatCard
           title="Low Stock Alerts"
           value={lowStockProducts}
           icon="AlertTriangle"
           gradient="from-error to-red-600"
+          change={{ value: 0, type: "neutral" }}
         />
       </div>
 
-      {/* Low Stock Alerts */}
-      {lowStockProducts > 0 && (
-        <div className="bg-gradient-to-r from-warning/5 to-yellow-100 border border-warning/20 rounded-xl p-6">
-          <div className="flex items-center mb-3">
-            <ApperIcon name="AlertTriangle" size={20} className="text-warning mr-3" />
-            <h2 className="text-lg font-semibold text-secondary">Low Stock Alert</h2>
+      {/* Analytics Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Sales Trend Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-secondary">Sales Trend</h3>
+            <ApperIcon name="TrendingUp" size={20} className="text-primary" />
           </div>
-          <p className="text-gray-700 mb-4">
-            You have {lowStockProducts} product{lowStockProducts !== 1 ? "s" : ""} with low stock levels that need attention.
-          </p>
-          <Button variant="warning" size="sm" icon="Package">
-            View Inventory
-          </Button>
+          <Chart
+            options={salesTrendData.options}
+            series={salesTrendData.series}
+            type="line"
+            height={300}
+          />
         </div>
-      )}
+
+        {/* Category Distribution Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-secondary">Category Distribution</h3>
+            <ApperIcon name="PieChart" size={20} className="text-primary" />
+          </div>
+          <Chart
+            options={categoryDistributionData.options}
+            series={categoryDistributionData.series}
+            type="donut"
+            height={300}
+          />
+        </div>
+      </div>
+
+      {/* Top Products Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-secondary">Top Selling Products</h3>
+          <ApperIcon name="BarChart3" size={20} className="text-primary" />
+        </div>
+        <Chart
+          options={topProductsData.options}
+          series={topProductsData.series}
+          type="bar"
+          height={350}
+        />
+      </div>
+{/* Revenue Analytics & Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Performance Insights */}
+        <div className="bg-gradient-to-br from-primary/5 to-purple-100 border border-primary/20 rounded-xl p-6">
+          <div className="flex items-center mb-4">
+            <ApperIcon name="Target" size={20} className="text-primary mr-3" />
+            <h3 className="text-lg font-semibold text-secondary">Performance Insights</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Monthly Growth</span>
+              <span className="font-semibold text-success">+12%</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Customer Retention</span>
+              <span className="font-semibold text-primary">87%</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Conversion Rate</span>
+              <span className="font-semibold text-accent">4.2%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Low Stock Alert */}
+        {lowStockProducts > 0 && (
+          <div className="bg-gradient-to-r from-warning/5 to-yellow-100 border border-warning/20 rounded-xl p-6">
+            <div className="flex items-center mb-3">
+              <ApperIcon name="AlertTriangle" size={20} className="text-warning mr-3" />
+              <h3 className="text-lg font-semibold text-secondary">Inventory Alert</h3>
+            </div>
+            <p className="text-gray-700 mb-4">
+              {lowStockProducts} product{lowStockProducts !== 1 ? "s" : ""} need restocking attention.
+            </p>
+            <Button variant="warning" size="sm" icon="Package">
+              Manage Inventory
+            </Button>
+          </div>
+        )}
+      </div>
 
 {/* Supplier Performance */}
       <div className="space-y-4">
