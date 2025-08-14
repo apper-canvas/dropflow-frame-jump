@@ -1,109 +1,394 @@
-import ordersData from "@/services/mockData/orders.json";
-
-// Simulate network delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Initialize ApperClient with Project ID and Public Key
+const { ApperClient } = window.ApperSDK;
+const apperClient = new ApperClient({
+  apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+  apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+});
 
 class OrderService {
   constructor() {
-    this.orders = [...ordersData];
+    this.tableName = 'order_c';
   }
 
   async getAll() {
-    await delay(300);
-    return [...this.orders];
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Id" } },
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "CreatedBy" } },
+          { field: { Name: "ModifiedOn" } },
+          { field: { Name: "ModifiedBy" } },
+          { field: { Name: "order_number_c" } },
+          { field: { Name: "customer_name_c" } },
+          { field: { Name: "customer_email_c" } },
+          { field: { Name: "shipping_address_c" } },
+          { field: { Name: "status_c" } },
+          { field: { Name: "total_c" } },
+          { field: { Name: "items_c" } }
+        ],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "DESC" }],
+        pagingInfo: { limit: 100, offset: 0 }
+      };
+
+      const response = await apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching orders:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
   async getById(id) {
-    await delay(200);
-    const order = this.orders.find(o => o.Id === parseInt(id));
-    if (!order) {
-      throw new Error("Order not found");
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Id" } },
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "CreatedBy" } },
+          { field: { Name: "ModifiedOn" } },
+          { field: { Name: "ModifiedBy" } },
+          { field: { Name: "order_number_c" } },
+          { field: { Name: "customer_name_c" } },
+          { field: { Name: "customer_email_c" } },
+          { field: { Name: "shipping_address_c" } },
+          { field: { Name: "status_c" } },
+          { field: { Name: "total_c" } },
+          { field: { Name: "items_c" } }
+        ]
+      };
+
+      const response = await apperClient.getRecordById(this.tableName, parseInt(id), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error(`Error fetching order with ID ${id}:`, error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    return { ...order };
   }
 
   async create(orderData) {
-    await delay(500);
-    const newId = Math.max(...this.orders.map(o => o.Id)) + 1;
-    const orderNumber = `ORD-${new Date().getFullYear()}-${String(newId).padStart(3, "0")}`;
-    const newOrder = {
-      Id: newId,
-      orderNumber,
-      ...orderData,
-      createdAt: new Date().toISOString()
-    };
-    this.orders.push(newOrder);
-    return { ...newOrder };
+    try {
+      // Only include Updateable fields in create operation
+      const createData = {
+        Name: orderData.Name || `Order ${Date.now()}`,
+        Tags: orderData.Tags || "",
+        order_number_c: orderData.order_number_c || `ORD-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
+        customer_name_c: orderData.customer_name_c || "",
+        customer_email_c: orderData.customer_email_c || "",
+        shipping_address_c: orderData.shipping_address_c || "",
+        status_c: orderData.status_c || "pending",
+        total_c: parseFloat(orderData.total_c) || 0.0,
+        items_c: orderData.items_c || ""
+      };
+
+      const params = { records: [createData] };
+      const response = await apperClient.createRecord(this.tableName, params);
+
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create order ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          throw new Error(failedRecords[0].message || 'Failed to create order');
+        }
+
+        return successfulRecords[0].data;
+      }
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error creating order:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
   }
 
-  async update(id, orderData) {
-    await delay(350);
-    const index = this.orders.findIndex(o => o.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Order not found");
+async update(id, orderData) {
+    try {
+      // Only include Updateable fields in update operation
+      const updateData = {
+        Id: parseInt(id)
+      };
+
+      if (orderData.Name !== undefined) updateData.Name = orderData.Name;
+      if (orderData.Tags !== undefined) updateData.Tags = orderData.Tags;
+      if (orderData.order_number_c !== undefined) updateData.order_number_c = orderData.order_number_c;
+      if (orderData.customer_name_c !== undefined) updateData.customer_name_c = orderData.customer_name_c;
+      if (orderData.customer_email_c !== undefined) updateData.customer_email_c = orderData.customer_email_c;
+      if (orderData.shipping_address_c !== undefined) updateData.shipping_address_c = orderData.shipping_address_c;
+      if (orderData.status_c !== undefined) updateData.status_c = orderData.status_c;
+      if (orderData.total_c !== undefined) updateData.total_c = parseFloat(orderData.total_c);
+      if (orderData.items_c !== undefined) updateData.items_c = orderData.items_c;
+
+      const params = { records: [updateData] };
+      const response = await apperClient.updateRecord(this.tableName, params);
+
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const successfulUpdates = response.results.filter(result => result.success);
+        const failedUpdates = response.results.filter(result => !result.success);
+
+        if (failedUpdates.length > 0) {
+          console.error(`Failed to update order ${failedUpdates.length} records:${JSON.stringify(failedUpdates)}`);
+          throw new Error(failedUpdates[0].message || 'Failed to update order');
+        }
+
+        return successfulUpdates[0].data;
+      }
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error updating order:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    this.orders[index] = { ...this.orders[index], ...orderData };
-    return { ...this.orders[index] };
   }
 
   async delete(id) {
-    await delay(250);
-    const index = this.orders.findIndex(o => o.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Order not found");
+    try {
+      const params = { RecordIds: [parseInt(id)] };
+      const response = await apperClient.deleteRecord(this.tableName, params);
+
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedDeletions = response.results.filter(result => !result.success);
+
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete order ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          throw new Error(failedDeletions[0].message || 'Failed to delete order');
+        }
+
+        return { success: true };
+      }
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error deleting order:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    this.orders.splice(index, 1);
-    return { success: true };
   }
 
   async getByStatus(status) {
-    await delay(300);
-    return this.orders.filter(o => o.status === status);
-  }
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Id" } },
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "CreatedBy" } },
+          { field: { Name: "ModifiedOn" } },
+          { field: { Name: "ModifiedBy" } },
+          { field: { Name: "order_number_c" } },
+          { field: { Name: "customer_name_c" } },
+          { field: { Name: "customer_email_c" } },
+          { field: { Name: "shipping_address_c" } },
+          { field: { Name: "status_c" } },
+          { field: { Name: "total_c" } },
+          { field: { Name: "items_c" } }
+        ],
+        where: [
+          {
+            FieldName: "status_c",
+            Operator: "EqualTo",
+            Values: [status]
+          }
+        ]
+      };
 
-  async getByDateRange(startDate, endDate) {
-    await delay(300);
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return this.orders.filter(o => {
-      const orderDate = new Date(o.createdAt);
-      return orderDate >= start && orderDate <= end;
-    });
-  }
-async getRecentOrders(limit = 10) {
-    await delay(250);
-    return [...this.orders]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, limit);
-  }
-  async getOrderShippingDetails(id) {
-    await delay(200);
-    const order = this.orders.find(o => o.Id === parseInt(id));
-    if (!order) {
-      throw new Error("Order not found");
+      const response = await apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching orders by status:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
     }
-    
-    // Return enhanced order data with shipping-specific fields
-    return {
-      ...order,
-      customerAddress: order.customerAddress || `${order.customer} Address, City, State 12345`,
-      totalWeight: this.calculateOrderWeight(order),
-      estimatedDimensions: this.getEstimatedPackageDimensions(order)
-    };
   }
 
-  calculateOrderWeight(order) {
+async getByDateRange(startDate, endDate) {
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Id" } },
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "CreatedBy" } },
+          { field: { Name: "ModifiedOn" } },
+          { field: { Name: "ModifiedBy" } },
+          { field: { Name: "order_number_c" } },
+          { field: { Name: "customer_name_c" } },
+          { field: { Name: "customer_email_c" } },
+          { field: { Name: "shipping_address_c" } },
+          { field: { Name: "status_c" } },
+          { field: { Name: "total_c" } },
+          { field: { Name: "items_c" } }
+        ],
+        where: [
+          {
+            FieldName: "CreatedOn",
+            Operator: "GreaterThanOrEqualTo",
+            Values: [startDate]
+          },
+          {
+            FieldName: "CreatedOn",
+            Operator: "LessThanOrEqualTo",
+            Values: [endDate]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching orders by date range:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
+  }
+
+  async getRecentOrders(limit = 10) {
+    try {
+      const params = {
+        fields: [
+          { field: { Name: "Id" } },
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "CreatedBy" } },
+          { field: { Name: "ModifiedOn" } },
+          { field: { Name: "ModifiedBy" } },
+          { field: { Name: "order_number_c" } },
+          { field: { Name: "customer_name_c" } },
+          { field: { Name: "customer_email_c" } },
+          { field: { Name: "shipping_address_c" } },
+          { field: { Name: "status_c" } },
+          { field: { Name: "total_c" } },
+          { field: { Name: "items_c" } }
+        ],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "DESC" }],
+        pagingInfo: { limit: limit, offset: 0 }
+      };
+
+      const response = await apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching recent orders:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
+  }
+async getOrderShippingDetails(id) {
+    try {
+      const order = await this.getById(id);
+      if (!order) {
+        throw new Error("Order not found");
+      }
+      
+      // Return enhanced order data with shipping-specific fields
+      return {
+        ...order,
+        customerAddress: order.shipping_address_c || `${order.customer_name_c} Address, City, State 12345`,
+        totalWeight: this.calculateOrderWeight(order),
+        estimatedDimensions: this.getEstimatedPackageDimensions(order)
+      };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching order shipping details:", error?.response?.data?.message);
+      } else {
+        console.error(error);
+      }
+      throw error;
+    }
+  }
+
+calculateOrderWeight(order) {
     // Simulate weight calculation based on items
-    const baseWeight = order.items * 1.2; // 1.2 lbs per item average
+    const itemsCount = order.items_c ? order.items_c.split(',').length : 1;
+    const baseWeight = itemsCount * 1.2; // 1.2 lbs per item average
     return Math.round(baseWeight * 10) / 10; // Round to 1 decimal
   }
 
   getEstimatedPackageDimensions(order) {
     // Simulate package dimensions based on order size
-    const items = order.items;
-    if (items <= 2) {
+    const itemsCount = order.items_c ? order.items_c.split(',').length : 1;
+    if (itemsCount <= 2) {
       return { length: 8, width: 6, height: 4 };
-    } else if (items <= 5) {
+    } else if (itemsCount <= 5) {
       return { length: 12, width: 8, height: 6 };
     } else {
       return { length: 16, width: 12, height: 8 };
@@ -113,47 +398,50 @@ async getRecentOrders(limit = 10) {
 
 // CSV Export functionality
 async function exportToCSV() {
-  await delay(300);
-  
-  const orderService = new OrderService();
-  const orders = await orderService.getAll();
-  
-  const headers = ['Id', 'customer', 'email', 'status', 'total', 'date', 'items', 'shippingAddress', 'paymentMethod'];
-  const csvContent = [
-    headers.join(','),
-    ...orders.map(order => 
-      headers.map(header => {
-        let value = order[header] || '';
-        // Handle items array
-        if (header === 'items' && Array.isArray(value)) {
-          value = value.map(item => `${item.product} (${item.quantity})`).join('; ');
-        }
-        // Handle date formatting
-        if (header === 'date' && value) {
-          value = new Date(value).toLocaleDateString();
-        }
-        // Handle total formatting
-        if (header === 'total' && typeof value === 'number') {
-          value = `$${value.toFixed(2)}`;
-        }
-        // Escape commas and quotes in values
-        return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
-          ? `"${value.replace(/"/g, '""')}"` 
-          : value;
-      }).join(',')
-    )
-  ].join('\n');
+  try {
+    const orderService = new OrderService();
+    const orders = await orderService.getAll();
+    
+    const headers = ['Id', 'Name', 'order_number_c', 'customer_name_c', 'customer_email_c', 'status_c', 'total_c', 'CreatedOn', 'items_c', 'shipping_address_c'];
+    const csvContent = [
+      headers.join(','),
+      ...orders.map(order => 
+        headers.map(header => {
+          let value = order[header] || '';
+          // Handle items formatting
+          if (header === 'items_c' && value) {
+            value = value.toString();
+          }
+          // Handle date formatting
+          if (header === 'CreatedOn' && value) {
+            value = new Date(value).toLocaleDateString();
+          }
+          // Handle total formatting
+          if (header === 'total_c' && typeof value === 'number') {
+            value = `$${value.toFixed(2)}`;
+          }
+          // Escape commas and quotes in values
+          return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+            ? `"${value.replace(/"/g, '""')}"` 
+            : value;
+        }).join(',')
+      )
+].join('\n');
 
-  // Create and download file
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("Error exporting orders to CSV:", error);
+    throw error;
+  }
 }
 
 export { exportToCSV };
