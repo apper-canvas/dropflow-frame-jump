@@ -34,14 +34,28 @@ const StatCard = ({
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 mb-1">{safeRender(title)}</p>
           <p className="text-2xl font-bold text-secondary mb-2">{safeRender(value)}</p>
-          {change && (
+{change && (
             <div className="flex items-center text-sm">
-              <ApperIcon 
-                name={changeType === "positive" ? "TrendingUp" : "TrendingDown"} 
-                size={14} 
-                className={`mr-1 ${changeColors[changeType]}`}
-              />
-              <span className={changeColors[changeType]}>{change}</span>
+              {(() => {
+                try {
+                  const iconElement = (
+                    <ApperIcon 
+                      name={changeType === "positive" ? "TrendingUp" : "TrendingDown"} 
+                      size={14} 
+                      className={`mr-1 ${changeColors[changeType]}`}
+                    />
+                  );
+                  // Ensure we're not rendering an invalid object
+                  if (typeof iconElement === 'object' && iconElement !== null && !React.isValidElement(iconElement)) {
+                    return <span className={`mr-1 ${changeColors[changeType]}`}>📈</span>;
+                  }
+                  return iconElement;
+                } catch (error) {
+                  console.warn('ApperIcon rendering error:', error);
+                  return <span className={`mr-1 ${changeColors[changeType]}`}>📈</span>;
+                }
+              })()}
+              <span className={changeColors[changeType]}>{String(change)}</span>
             </div>
           )}
         </div>
